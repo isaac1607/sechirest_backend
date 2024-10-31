@@ -81,6 +81,29 @@ CREATE TABLE restaurant_site (
     update_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Table restaurant assistant AI
+CREATE TABLE restaurant_assistant (
+    id SERIAL PRIMARY KEY,
+    nom_site TEXT,
+    fichier_menu TEXT,
+    rate_of_speech FLOAT DEFAULT 1.1,
+    wait_of_speech FLOAT DEFAULT 2,
+    max_stand_by INTEGER DEFAULT 2,
+    sleep FLOAT DEFAULT 0.2,
+    wait_for_api_response FLOAT DEFAULT 5,
+    nb_last_message INTEGER DEFAULT 7,
+    deep INTEGER DEFAULT 3,
+    silence_threshold INTEGER DEFAULT 800,
+    rms_noise_threshold FLOAT DEFAULT 0.08,
+    voice_api TEXT DEFAULT '11L',
+    instruction TEXT,
+    deleted BOOLEAN DEFAULT FALSE,
+    site_id INTEGER NOT NULL REFERENCES restaurant_site(id) ON DELETE RESTRICT,
+    restaurant_id INTEGER NOT NULL REFERENCES restaurant_restaurant(id) ON DELETE CASCADE,
+    create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Table des types de menu
 CREATE TABLE menu_type (
     id SERIAL PRIMARY KEY,

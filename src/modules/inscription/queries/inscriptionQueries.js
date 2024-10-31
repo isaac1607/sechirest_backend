@@ -39,17 +39,15 @@ export const regenererOTPQueries = {
     checkExistingOTP: `
         SELECT id, code, expires_at 
         FROM configuration_otp 
-        WHERE email = $1 AND expires_at > CURRENT_TIMESTAMP
+        WHERE email = $1
     `,
     
-    createNewOTP: `
-        INSERT INTO configuration_otp (email, code, expires_at)
-        VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '5 minutes')
-        ON CONFLICT (email) 
-        DO UPDATE SET 
-            code = EXCLUDED.code,
-            expires_at = EXCLUDED.expires_at,
+    updateOTP: `
+        UPDATE configuration_otp 
+        SET code = $2, 
+            expires_at = CURRENT_TIMESTAMP + INTERVAL '5 minutes',
             update_at = CURRENT_TIMESTAMP
+        WHERE email = $1
         RETURNING id, code, expires_at
     `
 };

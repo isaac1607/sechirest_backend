@@ -97,11 +97,11 @@ app.use((err, req, res, next) => {
 
 // Définition du port
 const PORT = process.env.PORT || 3000;
-
+const HOST = process.env.HOST || 'localhost';
 // Démarrage du serveur
-server.listen(PORT, () => {
+server.listen(PORT, HOST, () => {
     console.log(`Serveur démarré sur le port ${PORT} en mode ${process.env.NODE_ENV}`);
-    console.log(`Test l'API: http://localhost:${PORT}/api/test`);
+    console.log(`Test l'API: http://${HOST}:${PORT}/api/test`);
 });
 
 // Gestion de l'arrêt propre du serveur

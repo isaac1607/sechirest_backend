@@ -15,7 +15,10 @@ export class InscriptionService {
             );
             
             if (emailExistsResult.rows[0].exists) {
-                throw new Error('Cet email est déjà utilisé ou le nom est déjà utilisé');
+                return {
+                    status: 401,
+                    message: 'Cet email est déjà utilisé ou le nom est déjà utilisé' 
+                };
             }
             
             // Vérifier l'existence d'un OTP valide
@@ -25,14 +28,31 @@ export class InscriptionService {
             );
             
             if (existingOTPResult.rowCount > 0) {
-                if (existingOTPResult.rows[0].expires_at > new Date()) {
-                    return { 
+                const {code,expires_at} = existingOTPResult.rows[0];
+                console.log(code);
+                if (code === "FFFFFF") {
+                    return {
+                        status: 200,
+                        isAuth : true,
+                        message: "Votre email a déjà été vérifié.Veuillez entrer votre mot de passe."
+                    };
+                }
+                if (expires_at > new Date()) {
+                    return {
+                        status: 200,
+                        isAuth : false,
+                        expires_at: expires_at,
                         message: "Un code OTP a déjà été envoyé. Veuillez vérifier votre email." 
                     };
                 } else {
                     const otp = generateOTP();
-                    console.log(otp);
-                    await query(inscriptionQueries.updateOTP, [email, otp]);
+                    const resultInscription = await query(inscriptionQueries.updateOTP, [email, otp]);
+                    return {
+                        status: 201,
+                        isAuth : false,
+                        expires_at: resultInscription.rows[0].expires_at,
+                        message: "Le code OTP a été envoyé à votre adresse email." 
+                    };
                 }
             } else{
                 // Générer et sauvegarder un nouveau OTP
@@ -46,6 +66,8 @@ export class InscriptionService {
                 //await sendEmail(email, 'Code de validation', `Votre code de validation est : ${otp}`);
                 
                 return { 
+                    status: 201,
+                    isAuth : false,
                     message: "Le code OTP a été envoyé à votre adresse email." 
                 };
             }            
@@ -59,14 +81,17 @@ export class InscriptionService {
     async validerOtp(email, code) {
         try {
             // Rechercher l'OTP dans la base de données
-            const { rows } = await pool.query(
+            const { rows } = await query(
                 inscriptionQueries.validateOtp,
                 [email, code]
             );
     
             // Vérifier si l'OTP existe
             if (rows.length === 0) {
-                throw new Error('Code OTP inexistant ou invalide');
+                return {
+                    status: 401,
+                    message: 'Le code est inexistant ou invalide.'
+                };
             }
     
             const otpConfig = rows[0];
@@ -74,15 +99,17 @@ export class InscriptionService {
             // Vérifier si l'OTP n'a pas expiré
             const maintenant = new Date();
             if (maintenant >= otpConfig.expires_at) {
-                throw new Error('Code OTP invalide ou expiré');
+                return {
+                    status: 401,
+                    message: 'Le code a expiré.'
+                };
             }
-    
             // Update l'OTP utilisé
-            await pool.query(
+            await query(
                 inscriptionQueries.updateOTP,
                 [email, "FFFFFF"]
             );
-            return { message: 'Code OTP validé avec succès' };
+            return { status: 200,message: 'Le code correspond à celui envoyer à votre adresse email.' };
         } catch (error) {
             console.error('Erreur dans validerOtp:', error);
             throw error;
@@ -97,18 +124,27 @@ export class InscriptionService {
                 [email]
             );
 
-            if (existingOTPResult.rows.length > 0) {
+            if (existingOTPResult.rowCount == 0) {
                 return {
-                    status: 200,
-                    message: "Un code OTP valide est déjà actif. Veuillez vérifier votre email."
+                    status: 401,
+                    message: "Aucun email trouvé. Veuillez reprendre l'inscription."
                 };
             }
+
+            const {expires_at} = existingOTPResult.rows[0];
+            if (expires_at > new Date()) {
+                return {
+                    status: 401,
+                    message: "Un code OTP a déjà été envoyé. Veuillez vérifier votre email."
+                };
+            } 
 
             // Générer un nouveau code OTP
             const newOTP = generateOTP();
             console.log(newOTP);
+
             // Sauvegarder le nouveau code
-            await query(regenererOTPQueries.createNewOTP,[email, newOTP]);
+            const resultGenerate = await query(regenererOTPQueries.updateOTP,[email, newOTP]);
 
             // Envoi de l'email (commenté comme demandé)
             /* 
@@ -120,7 +156,8 @@ export class InscriptionService {
             */
 
             return {
-                status: 201,
+                status: 200,
+                expires_at: resultGenerate.rows[0].expires_at,
                 message: "Un nouveau code OTP a été envoyé à votre adresse email."
             };
 
@@ -135,11 +172,14 @@ export class InscriptionService {
             // Vérifier si l'OTP est valide
             const existingOTPResult = await query(
                 finaliserInscriptionQueries.checkExistingOTP,
-                [email]
+                [identifiant]
             );
 
             if (existingOTPResult.rows.length === 0) {
-                throw new Error('OTP_INVALID');
+                return {
+                    status: 401,
+                    message: "Code OTP invalide ou expiré"
+                };
             }
             
             // Vérifier si le restaurant existe déjà
@@ -151,10 +191,16 @@ export class InscriptionService {
             if (checkResult.rows.length > 0) {
                 const existingRestaurant = checkResult.rows[0];
                 if (existingRestaurant.identifiant === identifiant) {
-                    throw new Error('EMAIL_EXISTS');
+                    return {
+                        status: 401,
+                        message: "Cet email est déjà enregistré."
+                    };
                 }
                 if (existingRestaurant.nom === nom) {
-                    throw new Error('NAME_EXISTS');
+                    return {
+                        status: 401,
+                        message: "Un restaurant avec ce nom existe déjà."
+                    };
                 }
             }
 
@@ -179,7 +225,7 @@ export class InscriptionService {
 
             return {
                 status: 201,
-                message: "Restaurant créé avec succès"
+                message: "Votre compte a été créé avec succès"
             };
 
         } catch (error) {
