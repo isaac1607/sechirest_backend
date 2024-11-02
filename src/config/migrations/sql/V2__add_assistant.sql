@@ -1,3 +1,4 @@
+-- V2__add_assistant.sql
 -- Table restaurant assistant AI
 CREATE TABLE restaurant_assistant (
     id SERIAL PRIMARY KEY,

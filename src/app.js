@@ -8,6 +8,7 @@ import http from 'http';
 import dotenv from 'dotenv';
 import { runMigrations } from './config/migrations/index.js';
 import inscriptionRoutes from './routes/inscription.routes.js'; 
+import initRoutes from './routes/initialisation.routes.js'; 
 
 // Configuration des variables d'environnement
 dotenv.config();
@@ -76,6 +77,7 @@ app.get('/api/test', (req, res) => {
 });
 
 // Ajout des routes
+app.use('/initialisation', initRoutes);
 app.use('/restaurant/inscription', inscriptionRoutes);
 
 

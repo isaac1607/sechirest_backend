@@ -72,5 +72,29 @@ export const finaliserInscriptionQueries = {
         first_create, actif, abonne, type_abonnement_id, fin_abonnement, create_at, update_at) 
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         RETURNING id
+    `,
+
+    selectVille: `
+        SELECT id FROM configuration_ville
+        LIMIT 1
+    `,
+
+    selectCommune: `
+        SELECT id FROM configuration_commune
+        WHERE ville_id = $1
+        LIMIT 1
+    `,
+
+    createSite: `
+        INSERT INTO restaurant_site (nom, siege, code_access, ville_id, commune_id, quartier, restaurant_id, create_at, update_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        RETURNING id
+    `,
+
+    createAssistant: `
+        INSERT INTO restaurant_assistant (restaurant_id, site_id, create_at, update_at)
+        VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        RETURNING id
     `
 };
+

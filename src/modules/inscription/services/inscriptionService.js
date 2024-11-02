@@ -37,7 +37,7 @@ export class InscriptionService {
                         message: "Votre email a déjà été vérifié.Veuillez entrer votre mot de passe."
                     };
                 }
-                if (expires_at > new Date()) {
+                else if (expires_at > new Date()) {
                     return {
                         status: 200,
                         isAuth : false,
@@ -95,6 +95,7 @@ export class InscriptionService {
             }
     
             const otpConfig = rows[0];
+
     
             // Vérifier si l'OTP n'a pas expiré
             const maintenant = new Date();
@@ -207,7 +208,7 @@ export class InscriptionService {
             // Hacher le mot de passe et créer le restaurant
             const hashedPassword = hashPassword(password);
             
-            await query(
+            const resultRestaurant = await query(
                 finaliserInscriptionQueries.createRestaurant,
                 [
                     identifiant,
@@ -221,6 +222,26 @@ export class InscriptionService {
                     null, // type_abonnement_id
                     null // fin_abonnement
                 ]
+            );
+
+            // Créer un site
+            const resultVille = await query(
+                finaliserInscriptionQueries.selectVille,
+                []
+            );
+            const resultCommune = await query(
+                finaliserInscriptionQueries.selectCommune,
+                [resultVille.rows[0].id]
+            );
+            const resultSite = await query(
+                finaliserInscriptionQueries.createSite,
+                ["", true, hashPassword("12345"), resultVille.rows[0].id, resultCommune.rows[0].id, "", resultRestaurant.rows[0].id]
+            );
+
+            // Créer un assistant
+            await query(
+                finaliserInscriptionQueries.createAssistant,
+                [resultRestaurant.rows[0].id,resultSite.rows[0].id]
             );
 
             return {
